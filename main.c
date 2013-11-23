@@ -11,7 +11,7 @@ typedef struct adj {
 
 typedef struct vertex {
 	int n;               // vertex id (For debugging)
-	int n_DFS_tree;      // number of DFS tree in children
+	int n_child;         // no of children
 	int low;
 #define WHITE  0
 #define GRAY   1
@@ -37,23 +37,31 @@ void DFS_VISIT(struct vertex *G, struct vertex *u, int N) {
 	while (a) {
 		v = &G[a->vertex_no];
 		if (v->color == WHITE) {
+			u->n_child ++;
 			v->pi = u;
 			DFS_VISIT(G, v, N);
 			u->low = min(u->low, v->low);
+			if (u->d == 1) {
+				if (u->n_child >= 2) {
+					printf("Articulation point %d found (%d >= %d)\n", u->n, v->low, u->d); 
+				}
+			} else {
+				if (v->low >= u->d) {
+					printf("Articulation point %d found (%d >= %d)\n", u->n, v->low, u->d); 
+				}
+			}
 		}
 		// find back edge
 		if ((v != u->pi) && (v->color == GRAY)) {
 			u->low = v->low;
 			printf("Back edge %d to %d found\n", u->n, v->n);
 		}
-		if (v != u->pi)
-			u->n_DFS_tree ++;
 		a = a->next;
 	}
 	u->color = BLACK;
 	time ++;
 	u->f = time;
-	printf("[%2d]:%2d/%2d low:%d n_DFS_tree:%d\n",u->n,u->d,u->f,u->low,u->n_DFS_tree);
+	printf("[%2d]:%2d/%2d low:%d\n",u->n,u->d,u->f,u->low);
 }
 
 void DFS(struct vertex *G, int N) {
