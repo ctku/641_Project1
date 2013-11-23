@@ -32,7 +32,7 @@ void DFS_VISIT(struct vertex *G, struct vertex *u, int N) {
 	struct vertex *v;
 	time ++;
 	u->low = u->d = time;
-	printf("[%2d]:%2d/  \n",u->n,u->d);
+	//printf("[%2d]:%2d/  \n",u->n,u->d);
 	u->color = GRAY;
 	while (a) {
 		v = &G[a->vertex_no];
@@ -43,25 +43,28 @@ void DFS_VISIT(struct vertex *G, struct vertex *u, int N) {
 			u->low = min(u->low, v->low);
 			if (u->d == 1) {
 				if (u->n_child >= 2) {
-					printf("Articulation point %d found (%d >= %d)\n", u->n, v->low, u->d); 
+					printf("Articulation point: %d\n", u->n, v->low, u->d); 
 				}
 			} else {
 				if (v->low >= u->d) {
-					printf("Articulation point %d found (%d >= %d)\n", u->n, v->low, u->d); 
+					printf("Articulation point: %d\n", u->n, v->low, u->d); 
 				}
+			}
+			if (u->low != v->low) {
+				printf("Bridge: %d,%d\n", u->n, v->n); 
 			}
 		}
 		// find back edge
 		if ((v != u->pi) && (v->color == GRAY)) {
 			u->low = v->low;
-			printf("Back edge %d to %d found\n", u->n, v->n);
+			//printf("Back edge %d to %d found\n", u->n, v->n);
 		}
 		a = a->next;
 	}
 	u->color = BLACK;
 	time ++;
 	u->f = time;
-	printf("[%2d]:%2d/%2d low:%d\n",u->n,u->d,u->f,u->low);
+	//printf("[%2d]:%2d/%2d low:%d\n",u->n,u->d,u->f,u->low);
 }
 
 void DFS(struct vertex *G, int N) {
