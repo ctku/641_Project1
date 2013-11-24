@@ -32,6 +32,18 @@ struct node bridge[MAX];
 struct node biconn[MAX];
 int biconn_order[MAX][MAX];
 
+void add_bridge(int x, int y) {
+	int small = (x <= y) ? x : y;
+	int large = (x <= y) ? y : x;
+	bridge[small].val[0] ++; // use idx 0 to indicate num of values
+	bridge[small].val[large] = 1;
+}
+
+void add_articu(int x) {
+	articu[x].val[0] = 1;
+}
+
+
 void DFS_VISIT(struct vertex *G, struct vertex *u, int N) {
 	struct node *a = u->adj;
 	struct vertex *v;
@@ -48,27 +60,21 @@ void DFS_VISIT(struct vertex *G, struct vertex *u, int N) {
 			u->low = min(u->low, v->low);
 			if (u->d == 1) {
 				if (u->n_child >= 2) {
-					articu[u->n].val[0] = 1;
-					//printf("Articulation point: %d\n", u->n); 
+					add_articu(u->n);
+					add_bridge(u->n, v->n);
 				}
 			} else {
-				if (v->low >= u->d) {
-					articu[u->n].val[0] = 1;
-					//printf("Articulation point: %d\n", u->n); 
+				if (v->low > u->d) {
+					add_articu(u->n);
+					add_bridge(u->n, v->n);
+				} else if (v->low == u->d) {
+					add_articu(u->n);
 				}
 			}
-			if (u->low != v->low) {
-				int small = (u->n <= v->n) ? u->n : v->n;
-				int large = (u->n <= v->n) ? v->n : u->n;
-				bridge[small].val[0] ++; // use idx 0 to indicate num of values
-				bridge[small].val[large] = 1;
-				//printf("Bridge: %d,%d\n", u->n, v->n); 
-			}
-		}
-		// find back edge
-		if ((v != u->pi) && (v->color == GRAY)) {
 			u->low = min(u->low, v->low);
-			//printf("Back edge %d to %d found\n", u->n, v->n);
+		} else if (v != u->pi) {
+			// back edge found
+			u->low = min(u->low, v->d);
 		}
 		a = a->next;
 	}
