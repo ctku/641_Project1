@@ -26,10 +26,11 @@ typedef struct vertex {
 };
 
 int time;
-//struct vertex graph[MAX];
+
 struct node articu[MAX];
 struct node bridge[MAX];
-
+struct node biconn[MAX];
+int biconn_order[MAX][MAX];
 
 void DFS_VISIT(struct vertex *G, struct vertex *u, int N) {
 	struct node *a = u->adj;
@@ -48,12 +49,12 @@ void DFS_VISIT(struct vertex *G, struct vertex *u, int N) {
 			if (u->d == 1) {
 				if (u->n_child >= 2) {
 					articu[u->n].val[0] = 1;
-					printf("Articulation point: %d\n", u->n); 
+					//printf("Articulation point: %d\n", u->n); 
 				}
 			} else {
 				if (v->low >= u->d) {
 					articu[u->n].val[0] = 1;
-					printf("Articulation point: %d\n", u->n); 
+					//printf("Articulation point: %d\n", u->n); 
 				}
 			}
 			if (u->low != v->low) {
@@ -61,7 +62,7 @@ void DFS_VISIT(struct vertex *G, struct vertex *u, int N) {
 				int large = (u->n <= v->n) ? v->n : u->n;
 				bridge[small].val[0] ++; // use idx 0 to indicate num of values
 				bridge[small].val[large] = 1;
-				printf("Bridge: %d,%d\n", u->n, v->n); 
+				//printf("Bridge: %d,%d\n", u->n, v->n); 
 			}
 		}
 		// find back edge
@@ -74,6 +75,8 @@ void DFS_VISIT(struct vertex *G, struct vertex *u, int N) {
 	u->color = BLACK;
 	time ++;
 	u->f = time;
+	biconn[u->low].val[0] ++;
+	biconn[u->low].val[u->n] = 1;
 	//printf("[%2d]:%2d/%2d low:%d\n",u->n,u->d,u->f,u->low);
 }
 
@@ -95,7 +98,7 @@ void main(int argc, char **argv)
 	struct vertex G[120];
 	struct node **cur;
 	FILE *inputFile;
-	int N = 0, result, v, i, j;
+	int N = 0, result, v, i, j, k, n, bi_no;
 	char c;
 
 	if (argc < 2) {
@@ -128,27 +131,73 @@ void main(int argc, char **argv)
 	DFS(G, N);
 
 	// print articulation points
-	printf("\nArticulation Points:\n");
+	printf("Articulation Points:\n");
 	for (i=0; i<MAX; i++) {
 		if (articu[i].val[0])
 			printf("%d ", i);
 	}
+	printf("\n");
 
 	// print bridge
-	printf("\nBridge:\n");
+	printf("Bridge:\n");
 	for (i=0; i<MAX; i++) {
 		if (bridge[i].val[0]) {
 			for (j=1; j<MAX; j++) {
-				if (bridge[i].val[j])
+				if (bridge[i].val[j]) {
 					printf("%d %d\n", i, j);
+				}
 			}
 		}
 	}
 
 	// print biconnected-component
-	printf("\nBiconnected-Component:\n");
-
-
+	printf("Biconnected-Component:\n");
+	bi_no = 0;
+	for (i=0; i<MAX; i++) {
+		if (biconn[i].val[0]) {
+			n = 1; while (!biconn[i].val[n]) {n++;}
+			biconn_order[n][0] = i;
+			if (biconn[i].val[0] == 1) {
+				// find and add shared node from bridge info
+				struct node *a; int found = 0;
+				a = G[n].adj;
+				while(a) {
+					for (j=0; j<MAX; j++) {
+						if ((articu[j].val[0]) && (j==a->val[0])) {
+							if (found == 0) {
+								if (j<n) {
+									biconn_order[n][0] = 0;
+									biconn_order[j][0] = i;
+								}
+								biconn[i].val[0] ++;
+								biconn[i].val[j] = 1;
+							} else {
+								int small = (n<=j) ? n : j;
+								k = 1; while (biconn[k].val[0]) {k++;}
+								biconn[k].val[0] = 2;
+								biconn[k].val[n] = 1;
+								biconn[k].val[j] = 1;
+								biconn_order[small][found+1] = k;
+							}
+							found ++;
+						}
+					}
+					a = a->next;
+				}
+			}
+		}
+	}
+	for (i=0; i<MAX; i++) {
+		for (j=0; j<MAX; j++) {
+			if (biconn_order[i][j]) {
+				for (k=1; k<MAX; k++) {
+					if (biconn[biconn_order[i][j]].val[k] > 0)
+						printf("%d ", k);
+				}
+				printf("\n");
+			}
+		}
+	}
 
 	{
 		char cc;
