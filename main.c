@@ -67,7 +67,7 @@ void DFS_VISIT(struct vertex *G, struct vertex *u, int N) {
 		}
 		// find back edge
 		if ((v != u->pi) && (v->color == GRAY)) {
-			u->low = v->low;
+			u->low = min(u->low, v->low);
 			//printf("Back edge %d to %d found\n", u->n, v->n);
 		}
 		a = a->next;
@@ -160,14 +160,22 @@ void main(int argc, char **argv)
 			if (biconn[i].val[0] == 1) {
 				// find and add shared node from bridge info
 				struct node *a; int found = 0;
-				a = G[n].adj;
+				a = G[n].adj;	
 				while(a) {
 					for (j=0; j<MAX; j++) {
 						if ((articu[j].val[0]) && (j==a->val[0])) {
 							if (found == 0) {
 								if (j<n) {
 									biconn_order[n][0] = 0;
-									biconn_order[j][0] = i;
+									if (biconn_order[j][0] == 0) {
+										biconn_order[j][0] = i;
+									} else {
+										k = 1; while (biconn[k].val[0]) {k++;}
+										biconn[k].val[0] = 2;
+										biconn[k].val[n] = 1;
+										biconn[k].val[j] = 1;
+										biconn_order[j][1] = k;
+									}
 								}
 								biconn[i].val[0] ++;
 								biconn[i].val[j] = 1;
