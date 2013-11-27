@@ -14,6 +14,7 @@ typedef struct node {
 typedef struct vertex {
 	int n;               // vertex id (For debugging)
 	int n_child;         // no of children
+	int idx;             // biconnected componenet index
 	int low;
 #define WHITE  0
 #define GRAY   1
@@ -26,11 +27,30 @@ typedef struct vertex {
 };
 
 int time;
-
 struct node articu[MAX];
 struct node bridge[MAX];
-struct node biconn[MAX];
-int biconn_order[MAX][MAX];
+int bi_idx = 1;
+int bi_bucket[MAX][MAX];
+int biconn[MAX][MAX];
+int biconn_order[MAX];
+int edge[MAX][2];
+int edge_top;
+
+void push_edge(int x, int y) {
+	int small = (x <= y) ? x : y;
+	int large = (x <= y) ? y : x;
+	edge[edge_top][0] = small;
+	edge[edge_top][1] = large;
+	edge_top ++;
+}
+
+void pop_edge(int *x, int *y) {
+	edge_top --;
+	*x = edge[edge_top][0];
+	*y = edge[edge_top][1];
+	edge[edge_top][0] = 0;
+	edge[edge_top][1] = 0;
+}
 
 void add_bridge(int x, int y) {
 	int small = (x <= y) ? x : y;
@@ -43,6 +63,23 @@ void add_articu(int x) {
 	articu[x].val[0] = 1;
 }
 
+void add_bi_bucket(int idx, int x, int y) {
+	bi_bucket[idx][x] = 1;
+	bi_bucket[idx][y] = 1;
+}
+
+void add_biconn(int x, int y) {
+	int s, l;
+	int small = (x <= y) ? x : y;
+	int large = (x <= y) ? y : x;
+
+	do {
+		pop_edge(&s, &l);
+		add_bi_bucket(bi_idx, s, l);
+	} while ((small != s) || (large != l));
+
+	bi_idx ++;
+}
 
 void DFS_VISIT(struct vertex *G, struct vertex *u, int N) {
 	struct node *a = u->adj;
@@ -54,6 +91,7 @@ void DFS_VISIT(struct vertex *G, struct vertex *u, int N) {
 	while (a) {
 		v = &G[a->val[0]];
 		if (v->color == WHITE) {
+			push_edge(u->n, v->n);           // for connected component
 			u->n_child ++;
 			v->pi = u;
 			DFS_VISIT(G, v, N);
@@ -63,26 +101,30 @@ void DFS_VISIT(struct vertex *G, struct vertex *u, int N) {
 					add_articu(u->n);
 					add_bridge(u->n, v->n);
 				}
+				if (u->n_child <= 2) {
+					add_biconn(u->n, v->n);  // for connected component
+				}
 			} else {
 				if (v->low > u->d) {
 					add_articu(u->n);
 					add_bridge(u->n, v->n);
+					add_biconn(u->n, v->n);  // for connected component
 				} else if (v->low == u->d) {
 					add_articu(u->n);
+					add_biconn(u->n, v->n);  // for connected component
 				}
 			}
 			u->low = min(u->low, v->low);
-		} else if (v != u->pi) {
+		} else if ((v != u->pi) && (v->n < u->n)) {
 			// back edge found
 			u->low = min(u->low, v->d);
+			push_edge(u->n, v->n);           // for connected component
 		}
 		a = a->next;
 	}
 	u->color = BLACK;
 	time ++;
 	u->f = time;
-	biconn[u->low].val[0] ++;
-	biconn[u->low].val[u->n] = 1;
 	//printf("[%2d]:%2d/%2d low:%d\n",u->n,u->d,u->f,u->low);
 }
 
@@ -99,12 +141,57 @@ void DFS(struct vertex *G, int N) {
 	}
 }
 
+#define ARRAY(a,r,c,p)    ((int *)a + p*r + c)
+void col_quick_sort(int *arr, int c, int low, int high)
+{
+	int pivot,j,temp,i;
+
+	if (low < high) {
+		pivot = low;
+		i = low;
+		j = high;
+ 
+		while (i < j) {
+			while ((*ARRAY(arr,i,c,MAX) <= *ARRAY(arr,pivot,c,MAX)) && (i < high)) {
+				i++;
+			}
+			while (*ARRAY(arr,j,c,MAX) > *ARRAY(arr,pivot,c,MAX)) {
+				j--;
+			}
+			if (i<j) { 
+				temp = *ARRAY(arr,pivot,c,MAX);
+				*ARRAY(arr,i,c,MAX) = *ARRAY(arr,j,c,MAX);
+				*ARRAY(arr,j,c,MAX) = temp;
+			}
+		}
+		temp = *ARRAY(arr,pivot,c,MAX);
+		*ARRAY(arr,pivot,c,MAX) = *ARRAY(arr,j,c,MAX);
+		*ARRAY(arr,j,c,MAX) = temp;
+		col_quick_sort(arr, c, low, j-1);
+		col_quick_sort(arr, c, j+1, high);
+	}
+}
+
+int bubble_sort(int *array, int n) {
+	int c, d, swap;
+
+	for (c = 0 ; c < ( n - 1 ); c++) {
+		for (d = 0 ; d < n - c - 1; d++) {
+			if (array[d] > array[d+1]) { /* For decreasing order use < */
+				swap       = array[d];
+				array[d]   = array[d+1];
+				array[d+1] = swap;
+			}
+		}
+	}
+}
+
 void main(int argc, char **argv) 
 {
 	struct vertex G[120];
 	struct node **cur;
 	FILE *inputFile;
-	int N = 0, result, v, i, j, k, n, bi_no;
+	int N = 0, result, v, i, j, k, h, n, bi_no, *ptr;
 	char c;
 
 	if (argc < 2) {
@@ -157,58 +244,34 @@ void main(int argc, char **argv)
 	}
 
 	// print biconnected-component
+	//DFS_LABEL_EDGE(G, N);
 	printf("Biconnected-Component:\n");
-	bi_no = 0;
+
 	for (i=0; i<MAX; i++) {
-		if (biconn[i].val[0]) {
-			n = 1; while (!biconn[i].val[n]) {n++;}
-			biconn_order[n][0] = i;
-			if (biconn[i].val[0] == 1) {
-				// find and add shared node from bridge info
-				struct node *a; int found = 0;
-				a = G[n].adj;	
-				while(a) {
-					for (j=0; j<MAX; j++) {
-						if ((articu[j].val[0]) && (j==a->val[0])) {
-							if (found == 0) {
-								if (j<n) {
-									biconn_order[n][0] = 0;
-									if (biconn_order[j][0] == 0) {
-										biconn_order[j][0] = i;
-									} else {
-										k = 1; while (biconn[k].val[0]) {k++;}
-										biconn[k].val[0] = 2;
-										biconn[k].val[n] = 1;
-										biconn[k].val[j] = 1;
-										biconn_order[j][1] = k;
-									}
-								}
-								biconn[i].val[0] ++;
-								biconn[i].val[j] = 1;
-							} else {
-								int small = (n<=j) ? n : j;
-								k = 1; while (biconn[k].val[0]) {k++;}
-								biconn[k].val[0] = 2;
-								biconn[k].val[n] = 1;
-								biconn[k].val[j] = 1;
-								biconn_order[small][found+1] = k;
-							}
-							found ++;
-						}
-					}
-					a = a->next;
+		for (j=0; j<MAX; j++) {
+			if (bi_bucket[i][j] > 0) {
+				int k = 0;
+				while (biconn[j][k]) {
+					k ++;
 				}
+				biconn[j][k] = i;
+				break;
 			}
 		}
 	}
+
 	for (i=0; i<MAX; i++) {
-		for (j=0; j<MAX; j++) {
-			if (biconn_order[i][j]) {
-				for (k=1; k<MAX; k++) {
-					if (biconn[biconn_order[i][j]].val[k] > 0)
-						printf("%d ", k);
+		for (k=0; k<MAX; k++) {
+			if (biconn[i][k]) {
+				int found = 0;
+				for (j=0; j<MAX; j++) {
+					if (bi_bucket[biconn[i][k]][j] > 0) {
+						printf("%d ", j);
+						found = 1;
+					}
 				}
-				printf("\n");
+				if (found)
+					printf("\n");
 			}
 		}
 	}
