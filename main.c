@@ -2,9 +2,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <math.h>
 
 #define MAX     128
+
+#define MIN(x,y) ((x<y)?x:y)
 
 typedef struct node {
 	int val[MAX];
@@ -100,7 +101,7 @@ void DFS_VISIT(struct vertex *G, struct vertex *u, int N) {
 			u->n_child ++;                     cnt_V[u->n]++;
 			v->pi = u;                                        cnt_V[v->n]++;
 			DFS_VISIT(G, v, N);                cnt_V[u->n]++;
-			u->low = min(u->low, v->low);      cnt_V[u->n]++; cnt_V[v->n]++; cnt_E[u->n][v->n]++;
+			u->low = MIN(u->low, v->low);      cnt_V[u->n]++; cnt_V[v->n]++; cnt_E[u->n][v->n]++;
 			                                   cnt_V[u->n]++;
 			if (u->d == 1) {                 
 				                               cnt_V[u->n]++;
@@ -126,14 +127,14 @@ void DFS_VISIT(struct vertex *G, struct vertex *u, int N) {
 					}
 				}
 			}
-			u->low = min(u->low, v->low);      cnt_V[u->n]++; cnt_V[v->n]++; cnt_E[u->n][v->n]++;
+			u->low = MIN(u->low, v->low);      cnt_V[u->n]++; cnt_V[v->n]++; cnt_E[u->n][v->n]++;
 		} else {
 			                                   cnt_V[u->n]++; cnt_V[v->n]++; cnt_E[u->n][v->n]++;
 											   cnt_V[u->n]++; cnt_V[v->n]++; cnt_E[u->n][v->n]++;
 			if ((v != u->pi) && (v->n < u->n)) {
 				// back edge found
 				push_edge(u->n, v->n);         // for printing Biconnected component
-				u->low = min(u->low, v->d);    cnt_V[u->n]++; cnt_V[v->n]++; cnt_E[u->n][v->n]++;
+				u->low = MIN(u->low, v->d);    cnt_V[u->n]++; cnt_V[v->n]++; cnt_E[u->n][v->n]++;
 			}
 		}
 		a = a->next;                                          cnt_V[v->n]++;
