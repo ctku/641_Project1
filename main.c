@@ -4,7 +4,7 @@
 #include <string.h>
 #include <math.h>
 
-#define MAX     200
+#define MAX     128
 
 typedef struct node {
 	int val[MAX];
@@ -12,9 +12,8 @@ typedef struct node {
 };
 
 typedef struct vertex {
-	int n;               // vertex id (For debugging)
+	int n;               // vertex id
 	int n_child;         // no of children
-	int idx;             // biconnected componenet index
 	int low;
 #define WHITE  0
 #define GRAY   1
@@ -73,7 +72,6 @@ void add_biconn(int x, int y) {
 	int s, l;
 	int small = (x <= y) ? x : y;
 	int large = (x <= y) ? y : x;
-
 	do {
 		pop_edge(&s, &l);
 		add_bi_bucket(bi_idx, s, l);
@@ -92,34 +90,34 @@ void DFS_VISIT(struct vertex *G, struct vertex *u, int N) {
 	while (a) {
 		v = &G[a->val[0]];
 		if (v->color == WHITE) {
-			push_edge(u->n, v->n);           // for connected component
+			push_edge(u->n, v->n);           // for Biconnected component
 			u->n_child ++;
 			v->pi = u;
 			DFS_VISIT(G, v, N);
 			u->low = min(u->low, v->low);
 			if (u->d == 1) {
 				if (u->n_child >= 2) {
-					add_articu(u->n);
-					add_bridge(u->n, v->n);
+					add_articu(u->n);        // for Articulation point
+					add_bridge(u->n, v->n);  // for Bridge
 				}
 				if (u->n_child <= 2) {
-					add_biconn(u->n, v->n);  // for connected component
+					add_biconn(u->n, v->n);  // for Biconnected component
 				}
 			} else {
 				if (v->low > u->d) {
-					add_articu(u->n);
-					add_bridge(u->n, v->n);
-					add_biconn(u->n, v->n);  // for connected component
+					add_articu(u->n);        // for Articulation point
+					add_bridge(u->n, v->n);  // for Bridge
+					add_biconn(u->n, v->n);  // for Biconnected component
 				} else if (v->low == u->d) {
 					add_articu(u->n);
-					add_biconn(u->n, v->n);  // for connected component
+					add_biconn(u->n, v->n);  // for Biconnected component
 				}
 			}
 			u->low = min(u->low, v->low);
 		} else if ((v != u->pi) && (v->n < u->n)) {
 			// back edge found
+			push_edge(u->n, v->n);           // for Biconnected component
 			u->low = min(u->low, v->d);
-			push_edge(u->n, v->n);           // for connected component
 		}
 		a = a->next;
 	}
@@ -139,51 +137,6 @@ void DFS(struct vertex *G, int N) {
 	for (n=1; n<=N; n++) {
 		if (G[n].color == WHITE)
 			DFS_VISIT(G, &G[n], N); 
-	}
-}
-
-#define ARRAY(a,r,c,p)    ((int *)a + p*r + c)
-void col_quick_sort(int *arr, int c, int low, int high)
-{
-	int pivot,j,temp,i;
-
-	if (low < high) {
-		pivot = low;
-		i = low;
-		j = high;
- 
-		while (i < j) {
-			while ((*ARRAY(arr,i,c,MAX) <= *ARRAY(arr,pivot,c,MAX)) && (i < high)) {
-				i++;
-			}
-			while (*ARRAY(arr,j,c,MAX) > *ARRAY(arr,pivot,c,MAX)) {
-				j--;
-			}
-			if (i<j) { 
-				temp = *ARRAY(arr,pivot,c,MAX);
-				*ARRAY(arr,i,c,MAX) = *ARRAY(arr,j,c,MAX);
-				*ARRAY(arr,j,c,MAX) = temp;
-			}
-		}
-		temp = *ARRAY(arr,pivot,c,MAX);
-		*ARRAY(arr,pivot,c,MAX) = *ARRAY(arr,j,c,MAX);
-		*ARRAY(arr,j,c,MAX) = temp;
-		col_quick_sort(arr, c, low, j-1);
-		col_quick_sort(arr, c, j+1, high);
-	}
-}
-
-int bubble_sort(int *array, int n) {
-	int c, d, swap;
-
-	for (c = 0 ; c < ( n - 1 ); c++) {
-		for (d = 0 ; d < n - c - 1; d++) {
-			if (array[d] > array[d+1]) { /* For decreasing order use < */
-				swap       = array[d];
-				array[d]   = array[d+1];
-				array[d+1] = swap;
-			}
-		}
 	}
 }
 
@@ -221,10 +174,14 @@ void main(int argc, char **argv)
 	}
 	fclose(inputFile);
 
-	// perform DFS to label "low" value in each node
+	////////////////////////////////////////////// (above is for parsing input)
+
+	// perform DFS to get everything ready
 	DFS(G, N);
 
-	// print articulation points
+	////////////////////////////////////////////// (below is for printing ordered output)
+
+	// print Articulation Points
 	printf("Articulation Points:\n");
 	for (i=0; i<MAX; i++) {
 		if (articu[i].val[0])
@@ -245,9 +202,7 @@ void main(int argc, char **argv)
 	}
 
 	// print biconnected-component
-	//DFS_LABEL_EDGE(G, N);
 	printf("Biconnected-Component:\n");
-
 	for (i=0; i<MAX; i++) {
 		for (j=0; j<MAX; j++) {
 			if (bi_bucket[i][j] > 0) {
