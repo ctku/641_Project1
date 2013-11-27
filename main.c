@@ -80,63 +80,80 @@ void add_biconn(int x, int y) {
 	bi_idx ++;
 }
 
+int cnt_V[MAX];
+int cnt_E[MAX][MAX];
+int cnt_V_sum;
+int cnt_E_sum;
+
 void DFS_VISIT(struct vertex *G, struct vertex *u, int N) {
-	struct node *a = u->adj;
-	struct vertex *v;
-	time ++;
-	u->low = u->d = time;
-	//printf("[%2d]:%2d/  \n",u->n,u->d);
-	u->color = GRAY;
+	struct node *a;
+	struct vertex *v;                          // Vertext U  |  Vertext V   |  Edge U-V
+	time ++;                                   cnt_V[u->n]++;
+	u->low = time;                             cnt_V[u->n]++;
+	u->d = time;                               cnt_V[u->n]++;
+	u->color = GRAY;                           cnt_V[u->n]++;
+	a = u->adj;                                cnt_V[u->n]++;
 	while (a) {
-		v = &G[a->val[0]];
-		if (v->color == WHITE) {
-			push_edge(u->n, v->n);           // for Biconnected component
-			u->n_child ++;
-			v->pi = u;
-			DFS_VISIT(G, v, N);
-			u->low = min(u->low, v->low);
-			if (u->d == 1) {
-				if (u->n_child >= 2) {
-					add_articu(u->n);        // for Articulation point
-					add_bridge(u->n, v->n);  // for Bridge
+		v = &G[a->val[0]];                                    cnt_V[v->n]++; 
+		if (v->color == WHITE) {               cnt_V[u->n]++; cnt_V[v->n]++; cnt_E[u->n][v->n]++;
+			push_edge(u->n, v->n);             // for Biconnected component
+			u->n_child ++;                     cnt_V[u->n]++;
+			v->pi = u;                                        cnt_V[v->n]++;
+			DFS_VISIT(G, v, N);                cnt_V[u->n]++;
+			u->low = min(u->low, v->low);      cnt_V[u->n]++; cnt_V[v->n]++; cnt_E[u->n][v->n]++;
+			                                   cnt_V[u->n]++;
+			if (u->d == 1) {                 
+				                               cnt_V[u->n]++;
+				if (u->n_child >= 2) {       
+					add_articu(u->n);          // for printing Articulation point
+					add_bridge(u->n, v->n);    // for printing Bridge
 				}
-				if (u->n_child <= 2) {
-					add_biconn(u->n, v->n);  // for Biconnected component
+				                               cnt_V[u->n]++;
+				if (u->n_child <= 2) {       
+					add_biconn(u->n, v->n);    // for printing Biconnected component
 				}
 			} else {
-				if (v->low > u->d) {
-					add_articu(u->n);        // for Articulation point
-					add_bridge(u->n, v->n);  // for Bridge
-					add_biconn(u->n, v->n);  // for Biconnected component
-				} else if (v->low == u->d) {
-					add_articu(u->n);
-					add_biconn(u->n, v->n);  // for Biconnected component
+				                               cnt_V[u->n]++; cnt_V[v->n]++; cnt_E[u->n][v->n]++;
+				if (v->low > u->d) {         
+					add_articu(u->n);          // for printing Articulation point
+					add_bridge(u->n, v->n);    // for printing Bridge
+					add_biconn(u->n, v->n);    // for printing Biconnected component
+				} else {
+					                           cnt_V[u->n]++; cnt_V[v->n]++; cnt_E[u->n][v->n]++;
+					if (v->low == u->d) {
+						add_articu(u->n);
+						add_biconn(u->n, v->n);// for printing Biconnected component
+					}
 				}
 			}
-			u->low = min(u->low, v->low);
-		} else if ((v != u->pi) && (v->n < u->n)) {
-			// back edge found
-			push_edge(u->n, v->n);           // for Biconnected component
-			u->low = min(u->low, v->d);
+			u->low = min(u->low, v->low);      cnt_V[u->n]++; cnt_V[v->n]++; cnt_E[u->n][v->n]++;
+		} else {
+			                                   cnt_V[u->n]++; cnt_V[v->n]++; cnt_E[u->n][v->n]++;
+											   cnt_V[u->n]++; cnt_V[v->n]++; cnt_E[u->n][v->n]++;
+			if ((v != u->pi) && (v->n < u->n)) {
+				// back edge found
+				push_edge(u->n, v->n);         // for printing Biconnected component
+				u->low = min(u->low, v->d);    cnt_V[u->n]++; cnt_V[v->n]++; cnt_E[u->n][v->n]++;
+			}
 		}
-		a = a->next;
+		a = a->next;                                          cnt_V[v->n]++;
 	}
-	u->color = BLACK;
-	time ++;
-	u->f = time;
-	//printf("[%2d]:%2d/%2d low:%d\n",u->n,u->d,u->f,u->low);
+	u->color = BLACK;                          cnt_V[u->n]++; 
+	time ++;                                   cnt_V[u->n]++; 
+	u->f = time;                               cnt_V[u->n]++; 
 }
 
 void DFS(struct vertex *G, int N) {
 	int n;
 	for (n=1; n<=N; n++) {
-		G[n].color = WHITE;
-		G[n].pi = NULL;
+		G[n].color = WHITE;                    cnt_V[n]++; 
+		G[n].pi = NULL;                        cnt_V[n]++; 
 	}
 	time = 0;
-	for (n=1; n<=N; n++) {
-		if (G[n].color == WHITE)
-			DFS_VISIT(G, &G[n], N); 
+											   cnt_V[n]+=1; // n=1
+	for (n=1; n<=N; n++) {                     cnt_V[n]+=2; // n<=N, n++
+		if (G[n].color == WHITE)               cnt_V[n]++; 
+			DFS_VISIT(G, &G[n], N);            cnt_V[n]++; 
 	}
 }
 
@@ -145,7 +162,7 @@ void main(int argc, char **argv)
 	struct vertex G[120];
 	struct node **cur;
 	FILE *inputFile;
-	int N = 0, result, v, i, j, k, h, n, bi_no, *ptr;
+	int N = 0, result, v, i, j, k, h, n, bi_no, id, *ptr;
 	char c;
 
 	if (argc < 2) {
@@ -188,6 +205,7 @@ void main(int argc, char **argv)
 			printf("%d ", i);
 	}
 	printf("\n");
+	printf("\n");
 
 	// print bridge
 	printf("Bridge:\n");
@@ -200,6 +218,7 @@ void main(int argc, char **argv)
 			}
 		}
 	}
+	printf("\n");
 
 	// print biconnected-component
 	printf("Biconnected-Component:\n");
@@ -252,6 +271,40 @@ void main(int argc, char **argv)
 			}
 		}
 	}
+	printf("\n");
+
+	// get file name id
+	k = 0;
+	while (argv[1][k] != '\0') {
+        k++;
+    }
+	id = argv[1][k-4]-'0';
+
+	// print Vertex & Edge charge information
+	for (i=0; i<MAX; i++) {
+		if (cnt_V[i]) {
+			cnt_V_sum += cnt_V[i];
+			if (id==1) printf("Vertex %d: total %d operations(C commands) charged to Vertex %d in unary.\n", i, cnt_V[i], i);
+		}
+	}
+	for (i=0; i<MAX; i++) {
+		for (j=0; j<MAX; j++) {
+			if (i==j) continue;
+			if (cnt_E[i][j]) {
+				int sum = cnt_E[i][j] + cnt_E[j][i];
+				int s = (i<j) ? i:j;
+				int l = (i<j) ? j:i;
+				if (id==1) printf("Edge (%d, %d): total %d operations(C commands) charged to Edge (%d, %d) in unary.\n", s, l, sum, s, l);
+				cnt_E[i][j] = 0;
+				cnt_E[j][i] = 0;
+				cnt_E_sum += sum;
+			}
+		}
+	}
+
+	printf("Total number of operations charged to all vertices is: %d\n", cnt_V_sum);
+	printf("Total number of operations charged to all edges is: %d\n", cnt_E_sum);
+	printf("Total number of operations is: %d", cnt_V_sum + cnt_E_sum);
 
 	{
 		char cc;
