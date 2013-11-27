@@ -26,7 +26,7 @@ typedef struct vertex {
 	struct node *adj;     // linked list of all adjacent vertexs 
 };
 
-int time;
+int time = 0;
 struct node articu[MAX];
 struct node bridge[MAX];
 int bi_idx = 1;
@@ -35,7 +35,8 @@ int biconn[MAX][MAX];
 int biconn_order[MAX];
 int two_elms_bucket[MAX][MAX];
 int edge[MAX][2];
-int edge_top;
+int edge_top = 0;
+struct vertex G[MAX];
 
 void push_edge(int x, int y) {
 	int small = (x <= y) ? x : y;
@@ -83,8 +84,8 @@ void add_biconn(int x, int y) {
 
 int cnt_V[MAX];
 int cnt_E[MAX][MAX];
-int cnt_V_sum;
-int cnt_E_sum;
+int cnt_V_sum = 0;
+int cnt_E_sum = 0;
 
 void DFS_VISIT(struct vertex *G, struct vertex *u, int N) {
 	struct node *a;
@@ -160,7 +161,6 @@ void DFS(struct vertex *G, int N) {
 
 void main(int argc, char **argv) 
 {
-	struct vertex G[120];
 	struct node **cur;
 	FILE *inputFile;
 	int N = 0, result, v, i, j, k, h, n, bi_no, id, *ptr;
@@ -174,8 +174,10 @@ void main(int argc, char **argv)
 	// read input file into G
 	inputFile = fopen(argv[1], "r");
 	while (1) {
-		result = fscanf(inputFile, "%d%c", &N, &c);
-		if (result == EOF)
+		result = fscanf(inputFile, "%d%c", &k, &c);
+		if (k == N+1)
+			N = k;
+		else
 			break;
 		memset(&G[N], 0, sizeof(struct vertex));
 		G[N].n = N;
@@ -186,7 +188,7 @@ void main(int argc, char **argv)
 			(*cur)->next = NULL;
 			(*cur)->val[0] = v;
 			cur = &(*cur)->next;
-			if ((result == EOF) || (c == '\n'))
+			if ((result == EOF) || (c == '\n') || (c == 13))
 				break;
 		}
 	}
@@ -306,9 +308,4 @@ void main(int argc, char **argv)
 	printf("Total number of operations charged to all vertices is: %d\n", cnt_V_sum);
 	printf("Total number of operations charged to all edges is: %d\n", cnt_E_sum);
 	printf("Total number of operations is: %d", cnt_V_sum + cnt_E_sum);
-
-	{
-		char cc;
-		scanf("%c", &cc);
-	}
 }
