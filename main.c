@@ -33,6 +33,7 @@ int bi_idx = 1;
 int bi_bucket[MAX][MAX];
 int biconn[MAX][MAX];
 int biconn_order[MAX];
+int two_elms_bucket[MAX][MAX];
 int edge[MAX][2];
 int edge_top;
 
@@ -254,24 +255,45 @@ void main(int argc, char **argv)
 				while (biconn[j][k]) {
 					k ++;
 				}
-				biconn[j][k] = i;
+				biconn[j][k] = i; // kth "biconnected comp with smallest vertex j" is at bi_bucket[i] 
 				break;
 			}
 		}
 	}
-
+	for (i=0; i<MAX; i++) {
+		for (j=0; j<MAX; j++) {
+			if (bi_bucket[i][j] > 0) {
+				bi_bucket[i][0] ++; // num of vertex
+			}
+		}
+	}
+	for (i=0; i<MAX; i++) {
+		if (bi_bucket[i][0] == 2) {
+			k = 1; while (!bi_bucket[i][k]) {k++;};
+			h = k+1; while (!bi_bucket[i][h]) {h++;};
+			two_elms_bucket[k][h] = 1;
+			two_elms_bucket[k][0] ++; // number of biconnected comp shared same vertex
+		}
+	}
 	for (i=0; i<MAX; i++) {
 		for (k=0; k<MAX; k++) {
 			if (biconn[i][k]) {
-				int found = 0;
-				for (j=0; j<MAX; j++) {
-					if (bi_bucket[biconn[i][k]][j] > 0) {
-						printf("%d ", j);
-						found = 1;
+				if (bi_bucket[biconn[i][k]][0] == 2) {
+					h = 1; while (!two_elms_bucket[i][h]) {h++;}
+					two_elms_bucket[i][h] = 0;
+					two_elms_bucket[i][0] --;
+					printf("%d %d\n", i, h);
+				} else {
+					int found = 0;
+					for (j=1; j<MAX; j++) {
+						if (bi_bucket[biconn[i][k]][j] > 0) {
+							printf("%d ", j);
+							found = 1;
+						}
 					}
+					if (found)
+						printf("\n");
 				}
-				if (found)
-					printf("\n");
 			}
 		}
 	}
