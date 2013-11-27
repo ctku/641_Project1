@@ -307,5 +307,5 @@ void main(int argc, char **argv)
 
 	printf("Total number of operations charged to all vertices is: %d\n", cnt_V_sum);
 	printf("Total number of operations charged to all edges is: %d\n", cnt_E_sum);
-	printf("Total number of operations is: %d", cnt_V_sum + cnt_E_sum);
+	printf("Total number of operations is: %d\n", cnt_V_sum + cnt_E_sum);
 }
